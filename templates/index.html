@@ -1,0 +1,700 @@
+<html>
+ <head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+   body {
+     font-family: 'Montserrat', sans-serif;
+     margin: 0;
+     padding: 0;
+     height: 100vh;
+     display: flex;
+     flex-direction: column;
+   }
+   .container {
+     max-width: 100vw;
+     min-height: 100vh;
+     display: flex;
+     flex-direction: column;
+   }
+   .content {
+     display: flex;
+     flex-grow: 1;
+   }
+   .sidebar, .legend {
+     width: 20%;
+     min-width: 200px;
+   }
+   .main {
+     flex-grow: 1;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     background-color: #e5e7eb; /* Tailwind gray-300 */
+   }
+   .legend-box, .info-box {
+     max-height: calc(100vh - 200px);
+     overflow-y: auto;
+   }
+   .info-box ul {
+     list-style-type: disc;
+     padding-left: 20px;
+     text-align: left;
+   }
+   .info-box ul ul {
+     list-style-type: circle;
+     padding-left: 20px;
+   }
+   .building-img-frame {
+     border: 4px solid #dc2626; /* Tailwind red-600 */
+     padding: 4px;
+     display: inline-block;
+   }
+ #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            display: block;
+        }
+        #cameraInfo {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+        #pathSelector {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+  </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.min.js"></script>
+
+ </head>
+ <body class="bg-gray-200">
+  <div class="container mx-auto bg-white border-4 border-red-600">
+   <div class="bg-red-600 text-white text-center py-4">
+    <div class="flex justify-center items-center">
+     <img alt="School logo" class="h-12 w-12 mr-4" height="50" src="/static/public/images/logo.png" width="50"/>
+     <h1 class="text-4xl font-bold">
+      NaviBot: DIRECTIONAL COMPANION
+     </h1>
+    </div>
+    <h2 class="text-xl mt-2">
+     CAMILING CATHOLIC SCHOOL MAP
+    </h2>
+   </div>
+   <div class="content">
+    <div class="sidebar bg-white p-4 flex flex-col justify-between">
+     <div class="text-center">
+      <h3 class="text-2xl font-bold">
+       BUILDING
+      </h3>
+      <div class="building-img-frame">
+       <img alt="Building" class="rounded-lg my-2" height="250" id="building-img" src="https://storage.googleapis.com/a1aa/image/_tuZVplkL0UtUilKtEPXpBHsMSYdFyBg1hMSMSpYwtQ.jpg" width="350"/>
+      </div>
+      <h4 class="text-xl font-bold" id="building-name">
+       ADMINISTRATION BLDG.
+      </h4>
+     </div>
+     <div class="flex justify-around mt-2">
+      <button class="bg-red-600 text-white p-2 rounded-full" onclick="showPreviousBuilding()">
+       <i class="fas fa-arrow-left">
+       </i>
+      </button>
+      <button class="bg-red-600 text-white p-2 rounded-full" onclick="showInfo()">
+       <i class="fas fa-info">
+       </i>
+       <span class="block text-xs">
+        INFO
+       </span>
+      </button>
+      <button class="bg-red-600 text-white p-2 rounded-full" onclick="showDirections()">
+       <i class="fas fa-directions">
+       </i>
+       <span class="block text-xs">
+        DIRECTIONS
+       </span>
+      </button>
+      <button class="bg-red-600 text-white p-2 rounded-full" onclick="showNextBuilding()">
+       <i class="fas fa-arrow-right">
+       </i>
+      </button>
+     </div>
+     <div class="bg-white border-2 border-red-600 rounded-lg mt-2 p-4 text-left flex-grow info-box text-sm">
+      <div id="building-info" class="overflow-y-auto">
+       Administration building info...
+      </div>
+      <div id="building-directions" class="overflow-y-auto" style="display: none;">
+       Directions to Administration building...
+      </div>
+     </div>
+    </div>
+    <div class="main" id="map_viewer">
+<div id="loader">Loading... 0%</div>
+   
+    </div>
+    <div class="legend bg-white p-4">
+     <div class="text-center">
+      <h3 class="text-2xl font-bold">
+       LEGENDS
+      </h3>
+     </div>
+     <div class="legend-box mt-4 grid grid-cols-2 gap-4">
+      <div class="flex flex-col items-center">
+       <img alt="Kiosk" class="mb-2" height="65" src="/static/public/images/3.png" width="48"/>
+       <span class="text-lg">
+        Kiosk
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="Old Multi-Hall" class="mb-2" height="65" src="/static/public/images/4.png" width="48"/>
+       <span class="text-lg">
+        Old Multi-Hall
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Dominic Building" class="mb-2" height="65" src="/static/public/images/building3.jpg" width="48"/>
+       <span class="text-lg">
+        St. Dominic Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Lorenzo Building" class="mb-2" height="65" src="/static/public/images/building5.jpg" width="48"/>
+       <span class="text-lg">
+        St. Lorenzo Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Michael Building" class="mb-2" height="65" src="/static/public/images/building1.jpg" width="48"/>
+       <span class="text-lg">
+        St. Michael Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="Our Lady of Peace Building" class="mb-2" height="65" src="/static/public/images/building2.jpg" width="48"/>
+       <span class="text-lg">
+        Our Lady Of Peace Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="Administration Building" class="mb-2" height="65" src="/static/public/images/building6.jpg" width="48"/>
+       <span class="text-lg">
+        Administration Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Thomas Building" class="mb-2" height="65" src="/static/public/images/building44.jpg" width="48"/>
+       <span class="text-lg">
+        St. Thomas Bldg.
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Lorenzo Building 1" class="mb-2" height="65" src="/static/public/images/building5.jpg" width="48"/>
+       <span class="text-lg">
+        St. Lorenzo Bldg. 1
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="St. Lorenzo Building 2" class="mb-2" height="65" src="/static/public/images/building5.jpg" width="48"/>
+       <span class="text-lg">
+        St. Lorenzo Bldg. 2
+       </span>
+      </div>
+      <div class="flex flex-col items-center">
+       <img alt="Multi-Hall" class="mb-2" height="65" src="/static/public/images/4.png" width="48"/>
+       <span class="text-lg">
+        Multi-Hall
+       </span>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+    <script>
+        // Building definitions with paths and information
+const buildings = [
+  {
+    imgSrc: '/static/public/images/building6.jpg',
+    name: 'ADMINISTRATION BLDG.',
+    info: `
+      <ul>
+        <li>Guidance Office: Student counseling and support.</li>
+        <li>School Clinic: Medical assistance and first aid.</li>
+        <li>AVR/Nursery Room: Early childhood learning space.</li>
+        <li>TLE Room: Hands-on technical skills training.</li>
+        <li>Library: Books, research, and study area.</li>
+        <li>Cashier's Office: Manages tuition and fees.</li>
+        <li>Principal's & Registrar's Office: School administration and student records.</li>
+      </ul>
+    `,
+    pathKey: 'Admin Building'
+  },
+  {
+    imgSrc: '/static/public/images/building3.jpg',
+    name: 'ST. DOMINIC BLDG.',
+    info: `
+      <ul>
+        <li>Grade 8-10 Classrooms: Academic spaces.</li>
+        <li>Assistant Principal's Office: Student affairs and discipline.</li>
+        <li>Prefect of Discipline Office: Manages student conduct.</li>
+      </ul>
+    `,
+    pathKey: 'St. Dominic'
+  },
+  {
+    imgSrc: '/static/public/images/building1.jpg',
+    name: 'ST. MICHAEL BLDG.',
+    info: `
+      <ul>
+        <li>Grade 7-8 Classrooms: Learning spaces.</li>
+        <li>Vacant Room: Future use.</li>
+        <li>Comfort Room: Restroom facilities.</li>
+      </ul>
+    `,
+    pathKey: 'St. Michael'
+  },
+  {
+    imgSrc: '/static/public/images/building5.jpg',
+    name: 'ST. LORENZO BLDG.',
+    info: `
+      <ul>
+        <li>Faculty Room: Elementary teachers' workspace.</li>
+        <li>Science Lab: Practical science lessons.</li>
+        <li>Computer Labs: Junior & senior high school IT training.</li>
+        <li>Grade 1-6 & Kindergarten: Elementary classrooms.</li>
+        <li>Faculty Room: Teachers' workspace.</li>
+        <li>Comfort Rooms: Restroom facilities.</li>
+      </ul>
+    `,
+    pathKey: 'St. Lorenzo'
+  },
+  {
+    imgSrc: '/static/public/images/building2.jpg',
+    name: 'OUR LADY OF PEACE BLDG.',
+    info: `
+      <ul>
+        <li>STEM & HUMSS Classrooms: Senior high school.</li>
+        <li>Physics & Chemistry Labs: Hands-on science experiments.</li>
+        <li>Student Affairs Office: SHS management.</li>
+      </ul>
+    `,
+    pathKey: 'Our Lady of Peace'
+  },
+  {
+    imgSrc: '/static/public/images/building44.jpg',
+    name: 'ST. THOMAS BLDG.',
+    info: `
+      <ul>
+        <li>Canteen: Food and dining area.</li>
+        <li>Grade 12 Classrooms: Academic spaces.</li>
+      </ul>
+    `,
+    pathKey: 'Thomas'
+  },
+  {
+    imgSrc: '/static/public/images/building5.jpg',
+    name: 'ST. LORENZO BLDG. 1',
+    info: `
+      <ul>
+        <li>Elementary Classrooms</li>
+        <li>Faculty Room</li>
+        <li>Computer Laboratory</li>
+      </ul>
+    `,
+    pathKey: 'St. Lorenzo Building 1'
+  },
+  {
+    imgSrc: '/static/public/images/building5.jpg',
+    name: 'ST. LORENZO BLDG. 2',
+    info: `
+      <ul>
+        <li>Elementary Classrooms</li>
+        <li>Science Laboratory</li>
+        <li>Comfort Rooms</li>
+      </ul>
+    `,
+    pathKey: 'St. Lorenzo Building 2'
+  }
+];
+
+let currentBuildingIndex = 0;
+let currentLine = null;
+let currentArrows = [];
+let scene, camera, renderer, controls;
+
+// Helper function to create Vector3 points
+function k(x, z) {
+  return new THREE.Vector3(x, -3.90, z);
+}
+
+// Path definitions for each building
+const paths = {
+  'Admin Building': [
+    k(45.18, 86.65),
+    k(45.18, 66.64),
+    k(55.19, 66.64)
+  ],
+  'St. Dominic': [
+    k(45.18, 87.65),
+    k(45.18, 50.63),
+    k(-13.86, 49.63),
+    k(-15.86, 65.64)
+  ],
+  'St. Michael': [
+    k(44.18, 87.65),
+    k(45.18, 49.63),
+    k(-64.90, 48.63),
+    k(-65.90, 37.62),
+    k(-73.90, 37.62)
+  ],
+  'St. Lorenzo': [
+    k(46.18, 87.65),
+    k(44.18, 10.61),
+    k(-28.87, 9.61),
+    k(-28.87, 14.61),
+    k(-49.89, 15.61),
+    k(-50.89, 9.61)
+  ],
+  'Our Lady of Peace': [
+    k(45.18, 88.65),
+    k(45.18, -10.41),
+    k(56.19, -9.41)
+  ],
+  'Thomas': [
+    k(46.18, 86.65),
+    k(46.18, 22.61),
+    k(69.20, 23.61)
+  ],
+  'St. Lorenzo Building 1': [
+    k(45.18, 87.65),
+    k(45.18, -16.41),
+    k(-5.85, -16.41),
+    k(-6.85, -21.41)
+  ],
+  'St. Lorenzo Building 2': [
+    k(45.18, 89.65),
+    k(46.18, -49.43),
+    k(56.19, -50.43),
+    k(56.19, -62.43)
+  ],
+  'CR': [
+    k(45.18, 87.65),
+    k(45.18, -16.41),
+    k(24.17, -16.41),
+    k(24.17, -44.42),
+    k(16.16, -44.42)
+  ],
+  'Kiosk': [
+    k(45.18, 87.65),
+    k(45.18, 8.60),
+    k(-23.87, 9.61),
+    k(-23.87, -1.40)
+  ],
+  'Multi Hall': [
+    k(45.18, 87.65),
+    k(45.18, 9.61),
+    k(-28.87, 9.61),
+    k(-29.87, 22.61),
+    k(-41.88, 22.61)
+  ],
+  'Old Multi Hall': [
+    k(46.18, 88.65),
+    k(46.18, 15.61),
+    k(66.20, 15.61),
+    k(66.20, -9.41),
+    k(83.21, -9.41)
+  ],
+  'Stage/Court': [
+    k(46.18, 87.65),
+    k(45.18, 50.63),
+    k(-5.85, 49.63),
+    k(-5.85, 41.62)
+  ]
+};
+
+// Initialize Three.js scene
+function initScene() {
+  const container = document.getElementById('map_viewer');
+  
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87CEEB);
+  
+  camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(69.47, 71.94, 154.76);
+  
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
+  
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
+  
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(5, 10, 7);
+  scene.add(directionalLight);
+  
+  loadModel();
+  animate();
+}
+
+// Load 3D model
+function loadModel() {
+  const loaderElement = document.getElementById('loader');
+  const gltfLoader = new THREE.GLTFLoader();
+  const dracoLoader = new THREE.DRACOLoader();
+  dracoLoader.setDecoderPath('https://unpkg.com/three@0.128.0/examples/js/libs/draco/');
+  gltfLoader.setDRACOLoader(dracoLoader);
+
+  gltfLoader.load('/static/public/campus revise1.glb',
+    function (gltf) {
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.set(-center.x, -center.y, -center.z);
+      scene.add(model);
+      loaderElement.style.display = 'none';
+    },
+    function (xhr) {
+      const percentLoaded = Math.round((xhr.loaded / xhr.total) * 100);
+      loaderElement.innerText = `Loading... ${percentLoaded}%`;
+    },
+    function (error) {
+      console.error('Error loading .glb file:', error);
+    }
+  );
+}
+
+// Create arrow helper
+function createArrowHelper(direction, position, color = 0x00ff00) {
+  const length = 3.5;
+  const headLength = 2.5;
+  const headWidth = 2.3;
+  return new THREE.ArrowHelper(direction, position, length, color, headLength, headWidth);
+}
+
+// Show path for selected building
+function showPath(pathKey) {
+  // Clear existing path
+  if (currentLine) {
+    scene.remove(currentLine);
+  }
+  currentArrows.forEach(arrow => scene.remove(arrow));
+  currentArrows = [];
+
+  const selectedPath = paths[pathKey];
+  if (selectedPath) {
+    // Create path line
+    const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+    const geometry = new THREE.BufferGeometry().setFromPoints(selectedPath);
+    currentLine = new THREE.Line(geometry, material);
+    scene.add(currentLine);
+
+    // Create arrows along the path
+    for (let i = 0; i < selectedPath.length - 1; i++) {
+      const start = selectedPath[i];
+      const end = selectedPath[i + 1];
+      const direction = new THREE.Vector3().subVectors(end, start).normalize();
+      
+      const numArrows = 3;
+      for (let j = 0; j < numArrows; j++) {
+        const t = j / numArrows;
+        const position = new THREE.Vector3().lerpVectors(start, end, t);
+        const arrow = createArrowHelper(direction, position);
+        currentArrows.push(arrow);
+        scene.add(arrow);
+      }
+    }
+
+    animateArrows(selectedPath);
+  }
+}
+
+// Animate arrows along the path
+function animateArrows(path) {
+  const duration = 2000;
+  
+  currentArrows.forEach((arrow, index) => {
+    const startTime = Date.now();
+    
+    function updateArrow() {
+      const elapsedTime = (Date.now() - startTime) % duration;
+      const progress = elapsedTime / duration;
+      
+      const segmentIndex = Math.floor(index / 3);
+      const start = path[segmentIndex];
+      const end = path[segmentIndex + 1];
+      
+      const position = new THREE.Vector3().lerpVectors(
+        start,
+        end,
+        (progress + (index % 3) / 3) % 1
+      );
+      
+      arrow.position.copy(position);
+      requestAnimationFrame(updateArrow);
+    }
+    
+    updateArrow();
+  });
+}
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// Update building information
+function updateBuilding() {
+  const building = buildings[currentBuildingIndex];
+  document.getElementById('building-img').src = building.imgSrc;
+  document.getElementById('building-name').innerText = building.name;
+  document.getElementById('building-info').innerHTML = building.info;
+}
+
+// Navigation functions
+function showNextBuilding() {
+  currentBuildingIndex = (currentBuildingIndex + 1) % buildings.length;
+  updateBuilding();
+}
+
+function showPreviousBuilding() {
+  currentBuildingIndex = (currentBuildingIndex - 1 + buildings.length) % buildings.length;
+  updateBuilding();
+}
+
+function showInfo() {
+  document.getElementById('building-info').style.display = 'block';
+  document.getElementById('building-directions').style.display = 'none';
+  // Clear path when showing info
+  if (currentLine) {
+    scene.remove(currentLine);
+  }
+  currentArrows.forEach(arrow => scene.remove(arrow));
+  currentArrows = [];
+}
+
+function showDirections() {
+  document.getElementById('building-info').style.display = 'none';
+  document.getElementById('building-directions').style.display = 'block';
+  
+  // Get current building and show its path
+  const building = buildings[currentBuildingIndex];
+  if (building && building.pathKey) {
+    showPath(building.pathKey);
+  }
+camera.position.set(58.08, 132.08, 163.70);
+}
+
+// Initialize everything when DOM is loaded
+
+// Function to handle legend item clicks
+function handleLegendClick(locationName) {
+  // Clear existing path and arrows
+  if (currentLine) {
+    scene.remove(currentLine);
+  }
+  currentArrows.forEach(arrow => scene.remove(arrow));
+  currentArrows = [];
+
+  // Show path for clicked location
+  const pathKey = getPathKeyForLocation(locationName);
+  if (pathKey) {
+    showPath(pathKey);
+  }
+camera.position.set(58.08, 132.08, 163.70);
+}
+
+// Helper function to get path key for location
+function getPathKeyForLocation(locationName) {
+  // Map location names to path keys
+  const pathKeyMap = {
+    'Administration Bldg.': 'Admin Building',
+    'St. Dominic Bldg.': 'St. Dominic',
+    'St. Michael Bldg.': 'St. Michael',
+    'St. Lorenzo Bldg.': 'St. Lorenzo',
+    'Our Lady of Peace Bldg.': 'Our Lady of Peace',
+    'St. Thomas Bldg.': 'Thomas',
+    'St. Lorenzo Bldg. 1': 'St. Lorenzo Building 1',
+    'St. Lorenzo Bldg. 2': 'St. Lorenzo Building 2',
+    'Comfort Room': 'CR',
+    'Kiosk': 'Kiosk',
+    'Multi-Hall': 'Multi Hall',
+    'Old Multi-Hall': 'Old Multi Hall',
+    'Stage/Court': 'Stage/Court'
+  };
+  
+  return pathKeyMap[locationName];
+}
+
+function createClickableLegend() {
+  const legendBox = document.querySelector('.legend-box');
+  const legendItems = [
+    { img: '/static/public/images/building6.jpg', name: 'Administration Bldg.' },
+    { img: '/static/public/images/building3.jpg', name: 'St. Dominic Bldg.' },
+    { img: '/static/public/images/building1.jpg', name: 'St. Michael Bldg.' },
+    { img: '/static/public/images/building5.jpg', name: 'St. Lorenzo Bldg.' },
+    { img: '/static/public/images/building2.jpg', name: 'Our Lady of Peace Bldg.' },
+    { img: '/static/public/images/building44.jpg', name: 'St. Thomas Bldg.' },
+    { img: '/static/public/images/building5.jpg', name: 'St. Lorenzo Bldg. 1' },
+    { img: '/static/public/images/building5.jpg', name: 'St. Lorenzo Bldg. 2' },
+    { img: '/static/public/images/cr.png', name: 'Comfort Room' },
+    { img: '/static/public/images/3.png', name: 'Kiosk' },
+    { img: '/static/public/images/4.png', name: 'Multi-Hall' },
+    { img: '/static/public/images/4.png', name: 'Old Multi-Hall' }
+  ];
+
+  legendBox.innerHTML = legendItems.map(item => `
+    <div class="flex flex-col items-center mb-4 cursor-pointer hover:opacity-75 transition-opacity" 
+         onclick="handleLegendClick('${item.name}')">
+      <img src="${item.img}" alt="${item.name}" class="w-12 h-16 mb-2 object-cover rounded"/>
+      <span class="text-sm font-medium text-center">${item.name}</span>
+    </div>
+  `).join('');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initScene();
+  updateBuilding();
+  createClickableLegend();
+  
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    const container = document.getElementById('map_viewer');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  });
+});
+
+    </script>
+ </body>
+</html>
