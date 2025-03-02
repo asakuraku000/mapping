@@ -1,6 +1,2 @@
 Flask
 gunicorn
-numpy
-pandas
-opencv-python
-tensorflow
